@@ -1,0 +1,112 @@
+// Q60: Create 3 threads printing a message
+#include<stdio.h>
+#include<pthread.h>
+
+void* fun(void* id){
+    printf("Thread %ld running\n", (long)id);
+    return NULL;
+}
+
+int main(){
+    pthread_t t[3];
+    for(long i=0;i<3;i++)
+        pthread_create(&t[i], NULL, fun, (void*)i);
+
+    for(int i=0;i<3;i++)
+        pthread_join(t[i], NULL);
+
+    return 0;
+}
+
+
+// Q61: One thread sums, one finds primes
+#include<stdio.h>
+#include<stdlib.h>
+#include<pthread.h>
+#include<string.h>
+
+int a,b;
+
+int isPrime(int n){
+    if(n<2) return 0;
+    for(int i=2;i*i<=n;i++)
+        if(n%i==0) return 0;
+    return 1;
+}
+
+void* sumThread(){
+    long *s = malloc(sizeof(long));
+    *s = 0;
+    for(int i=a;i<=b;i++) *s += i;
+    return s;
+}
+
+void* primeThread(){
+    char *buf = malloc(5000); buf[0] = 0;
+    for(int i=a;i<=b;i++){
+        if(isPrime(i)){
+            char t[20];
+            sprintf(t,"%d ",i);
+            strcat(buf, t);
+        }
+    }
+    return buf;
+}
+
+int main(){
+    printf("Enter a b: ");
+    scanf("%d %d",&a,&b);
+
+    pthread_t t1,t2;
+
+    pthread_create(&t1,NULL,sumThread,NULL);
+    pthread_create(&t2,NULL,primeThread,NULL);
+
+    long *sum;
+    char *primes;
+
+    pthread_join(t1,(void**)&sum);
+    pthread_join(t2,(void**)&primes);
+
+    printf("Sum = %ld\n", *sum);
+    printf("Primes: %s\n", primes);
+
+    free(sum);
+    free(primes);
+
+    return 0;
+}
+
+
+// Q62: Two threads print odd and even numbers
+#include<stdio.h>
+#include<pthread.h>
+
+int end;
+
+void* even(){
+    for(int i=0;i<=end;i++)
+        if(i%2==0) printf("Even: %d\n", i);
+    return NULL;
+}
+
+void* odd(){
+    for(int i=0;i<=end;i++)
+        if(i%2!=0) printf("Odd: %d\n", i);
+    return NULL;
+}
+
+int main(){
+    printf("Enter end value: ");
+    scanf("%d",&end);
+
+    pthread_t e,o;
+
+    pthread_create(&e,NULL,even,NULL);
+    pthread_create(&o,NULL,odd,NULL);
+
+    pthread_join(e,NULL);
+    pthread_join(o,NULL);
+
+    return 0;
+}
