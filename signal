@@ -1,0 +1,181 @@
+// Q42: List even PIDs (safe version, no kill)
+#include<stdio.h>
+#include<dirent.h>
+#include<stdlib.h>
+#include<string.h>
+#include<unistd.h>
+
+int main() {
+    DIR *p = opendir("/proc");
+    struct dirent *e;
+
+    if (!p) { perror("open"); return 1; }
+
+    while ((e = readdir(p)) != NULL) {
+        int pid = atoi(e->d_name);
+        if (pid > 0 && pid % 2 == 0)
+            printf("Even PID: %d\n", pid);
+    }
+    closedir(p);
+    return 0;
+}
+
+
+// Q45: Global and local variable change in child
+#include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
+
+int g = 100;
+
+int main() {
+    int pid = fork();
+    int l = 50;
+
+    if (pid < 0) { printf("Fork failed\n"); return 1; }
+
+    if (pid == 0) {
+        g++; l++;
+        printf("Child: g=%d l=%d pid=%d\n", g, l, getpid());
+    }
+    else {
+        sleep(1);
+        printf("Parent: g=%d l=%d pid=%d\n", g, l, getpid());
+    }
+    return 0;
+}
+
+
+// Q48: Print system processes 5 times every 30 seconds
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+
+int main(){
+    for(int i=1;i<=5;i++){
+        printf("Iteration %d:\n", i);
+        system("ps -e");
+        if(i<5) sleep(30);
+    }
+    return 0;
+}
+
+
+// Q49: Ignore Ctrl+C then restore default
+#include<stdio.h>
+#include<signal.h>
+#include<unistd.h>
+
+void handler(int s){
+    printf("Signal %d caught, now resetting to default\n", s);
+    signal(SIGINT, SIG_DFL);
+}
+
+int main(){
+    signal(SIGINT, handler);
+    while(1){
+        printf("Running... press Ctrl+C\n");
+        sleep(1);
+    }
+    return 0;
+}
+
+
+// Q50: Two child processes print 1 to 10
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/wait.h>
+
+void work(){
+    for(int i=1;i<=10;i++){
+        printf("PID=%d PPID=%d %d\n", getpid(), getppid(), i);
+        usleep(100000);
+    }
+}
+
+int main(){
+    pid_t p1 = fork();
+    if(p1 == 0){ work(); return 0; }
+
+    pid_t p2 = fork();
+    if(p2 == 0){ work(); return 0; }
+
+    wait(NULL);
+    wait(NULL);
+
+    printf("Good Bye\n");
+    return 0;
+}
+
+
+// Q51: Run who, ls -l, date using three children
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/wait.h>
+
+int main(){
+    if(fork()==0){ execlp("who","who",NULL); }
+    if(fork()==0){ execlp("ls","ls","-l",NULL); }
+    if(fork()==0){ execlp("date","date",NULL); }
+
+    for(int i=0;i<3;i++) wait(NULL);
+    return 0;
+}
+
+
+// Q52: Parent kills child after delay
+#include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include<sys/wait.h>
+#include<signal.h>
+
+int main(){
+    int pid = fork();
+
+    if(pid == 0){
+        for(int i=1;i<=15;i++){
+            printf("Child working %d\n", i);
+            sleep(1);
+        }
+        return 0;
+    }
+    else {
+        sleep(5);
+        printf("Timeout. Killing child...\n");
+        kill(pid, SIGKILL);
+        wait(NULL);
+        printf("Child killed.\n");
+    }
+    return 0;
+}
+c
+Copy code
+// Q55: Parent kills child and receives SIGCHLD
+#include<stdio.h>
+#include<signal.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include<sys/wait.h>
+
+void hdlr(int s){
+    printf("Signal %d occurred\n", s);
+}
+
+int main(){
+    pid_t pid = fork();
+    signal(SIGCHLD, hdlr);
+
+    if(pid == 0){
+        while(1){
+            printf("Child running (%d)\n", getpid());
+            sleep(1);
+        }
+    }
+    else{
+        sleep(3);
+        kill(pid, SIGINT);
+        sleep(3);
+    }
+    return 0;
+}
