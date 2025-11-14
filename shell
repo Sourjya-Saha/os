@@ -1,0 +1,171 @@
+#!/bin/bash
+
+# Q1: Sum of digits
+read -p "Enter number: " n
+num=${n#-}
+sum=0
+while [ $num -gt 0 ]; do
+    sum=$((sum + num % 10))
+    num=$((num / 10))
+done
+echo "Sum = $sum"
+
+# Q3: Reverse a number
+read -p "Enter number: " n
+sign=""
+[[ $n == -* ]] && sign="-" && n=${n#-}
+rev=0
+while [ $n -gt 0 ]; do
+    rev=$((rev * 10 + n % 10))
+    n=$((n / 10))
+done
+echo "Reverse = $sign$rev"
+
+# Q6: Maximum of 3 numbers
+read -p "Enter 3 numbers: " a b c
+max=$a
+((b > max)) && max=$b
+((c > max)) && max=$c
+echo "Max = $max"
+
+# Q8: Salary calculation
+read -p "Basic salary: " B
+DA=$(awk "BEGIN{print $B*0.52}")
+HRA=$(awk "BEGIN{print $B*0.15}")
+CPF=$(awk "BEGIN{print ($B+$DA)*0.12}")
+GROSS=$(awk "BEGIN{print $B+$DA+$HRA}")
+NET=$(awk "BEGIN{print $GROSS-$CPF}")
+echo "Gross = $GROSS"
+echo "Net = $NET"
+
+# Q10: Basic calculator
+read -p "Enter a b: " a b
+echo "Choose: 1)+ 2)- 3)* 4)/"
+read op
+case $op in
+    1) res=$(awk "BEGIN{print $a+$b}") ;;
+    2) res=$(awk "BEGIN{print $a-$b}") ;;
+    3) res=$(awk "BEGIN{print $a*$b}") ;;
+    4) res=$(awk "BEGIN{print $a/$b}") ;;
+    *) echo "Invalid choice";;
+esac
+echo "Result = $res"
+
+# Q12A: Print without newline
+printf "Enter text: "
+read txt
+printf "%s" "$txt"
+echo
+
+# Q12B: Pyramid pattern
+read -p "Lines: " n
+for ((i=1; i<=n; i++)); do
+    for ((s=n; s>i; s--)); do printf " "; done
+    for ((j=1; j<=2*i-1; j++)); do printf "*"; done
+    echo
+done
+
+# Q13: Count vowels & consonants
+read -p "Sentence: " line
+clean=$(echo "$line" | tr -cd '[:alpha:]' | tr A-Z a-z)
+vowels=$(echo "$clean" | grep -o "[aeiou]" | wc -l)
+consonants=$(( ${#clean} - vowels ))
+echo "Vowels = $vowels"
+echo "Consonants = $consonants"
+
+# Q16: Replace first 4 chars of 5th word
+read -p "Enter line: " l
+read -p "4-character replacement: " r
+awk -v r="$r" '{
+    if (NF < 5) { print "Not enough words"; exit }
+    $5 = r substr($5,5)
+    print
+}' <<< "$l"
+
+# Q19: Check if user exists
+read -p "Username: " u
+id "$u" >/dev/null 2>&1 && echo "User exists" || echo "User not found"
+
+# Q20: Last 20 commands of a user
+read -p "Enter username: " u
+file="/home/$u/.bash_history"
+[ -f "$file" ] && tail -n 20 "$file" || echo "History not found"
+
+# Q22: Welcome + date
+echo "Welcome"
+date
+
+# Q23: Files >500 bytes modified in July
+read -p "Directory: " d
+find "$d" -type f -size +500c -printf "%T@ %s %p\n" |
+while read t s p; do
+    month=$(date -d @"${t%.*}" +%b)
+    [[ $month == Jul ]] && echo "$s $p"
+done | sort -nr
+
+# Q25: Last modification time of file
+read -p "Filename: " f
+[ -f "$f" ] && stat -c "Modified: %y" "$f" || echo "Not found"
+
+# Q27: Files modified 14 days ago
+find . -type f -mtime 14 -printf "%p\n"
+
+# Q28: Files starting with P in November
+find . -type f -iname "p*" -printf "%TY-%Tm-%Td %p\n" | awk -F- '$2=="11"'
+
+# Q29: Total size of non-directory files
+size=0
+ls -l | grep ^- | tr -s ' ' | cut -d ' ' -f5 |
+while read n; do
+    size=$((size+n))
+    echo $size > temp
+done
+echo "Total size = $(cat temp)"
+rm temp
+
+# Q30: Files starting with vowel
+for f in [AaEeIiOoUu]*; do
+    [ -e "$f" ] && echo "$f"
+done
+
+# Q31: Delete matching filenames from two folders
+read -p "Dir1: " d1
+read -p "Dir2: " d2
+for f in "$d1"/*; do
+    name=$(basename "$f")
+    [ -e "$d2/$name" ] && rm "$d2/$name" && echo "Deleted $name"
+done
+
+# Q32: Compare file count of directories
+read -p "Other directory: " o
+c1=$(find . -maxdepth 1 -type f | wc -l)
+c2=$(find "$o" -maxdepth 1 -type f | wc -l)
+echo "Current dir files: $c1"
+echo "$o files: $c2"
+
+# Q34: File stats
+read -p "Filename: " f
+[ -f "$f" ] && wc "$f" || echo "Not a regular file"
+
+# Q36: Concatenate or delete if duplicate
+read -p "File1: " f1
+read -p "File2: " f2
+if cmp -s "$f1" "$f2"; then
+    rm "$f2"
+    echo "Deleted duplicate"
+else
+    cat "$f2" >> "$f1"
+    echo "Concatenated"
+fi
+
+# Q40: Mini menu program
+while true; do
+    echo "1.Files 2.Date 3.Users 4.Exit"
+    read choice
+    case $choice in
+        1) ls -l ;;
+        2) date ;;
+        3) who ;;
+        4) break ;;
+    esac
+done
